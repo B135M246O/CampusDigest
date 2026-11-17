@@ -3,14 +3,11 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from app.core.config import settings
 from app.filters.articles import CategoryFilter, SourceFilter
 
-# Номера меню для ConversationHandler:
 MAIN_MENU_NUM, SOURCE_MENU_NUM, CATEGORY_MENU_NUM, SETTINGS_MENU_NUM = range(4)
-# Текст в меню:
-MAIN_MENU_TXT = 'Выберите действие:'
-SOURCE_MENU_TXT = 'Выберите источник из доступных:'
-CATEGORY_MENU_TXT = 'Выберите тему из доступных:'
+MAIN_MENU_TXT = 'CampusDigest — новости вузов и объявления для студентов. Выберите действие:'
+SOURCE_MENU_TXT = 'Выберите университет:'
+CATEGORY_MENU_TXT = 'Выберите тему университетских новостей:'
 SETTINGS_MENU_TXT = 'Выбрано статей для получения: <b>{}</b>'.format
-# Кнопки:
 ALL_BTN = 'ВСЕ'
 
 
@@ -63,7 +60,7 @@ def pattern(menu):
 
 
 main_keyboard = keyboard_constructor(
-    {'📰 Статьи': str(SOURCE_MENU_NUM), '⚒️ Настройки': str(SETTINGS_MENU_NUM)}
+    {'📰 Новости кампуса': str(SOURCE_MENU_NUM), '⚒️ Настройки': str(SETTINGS_MENU_NUM)}
 )
 source_keyboard = keyboard_constructor(
     {s.value: s.value for s in SourceFilter if s != 'ВСЕ'},

@@ -1,9 +1,10 @@
-import aiofiles
+from html import escape
+from secrets import token_urlsafe
+
 from loguru import logger
-from telegram import InputFile
 from telegram.ext import ContextTypes
 
-from app.core.config import BASE_DIR, settings
+from app.core.config import settings
 from app.core.db import get_session
 from app.crud.articles import get_articles_from_db, mark_articles_as_read
 from app.crud.user import (create_user, get_user_article_limit_from_db,
@@ -14,14 +15,10 @@ from app.models.articles import Article
 
 from .menu import article_keyboard, get_article_url
 
-IMG_NOT_FOUND_PATH = str(
-    BASE_DIR / "app" / "api" / "templates" / 'img_not_found.png')
-
-
 async def get_or_create_user(chat_id: int):
     """Получение или создание пользователя."""
-    email = str(chat_id) + '@app.ru'
-    password = str(chat_id)
+    email = f'telegram-{chat_id}@users.example.com'
+    password = token_urlsafe(32)
     sessions = get_session()
     async for session in sessions:
         user = await get_user_by_chat_id_from_db(session, chat_id)
@@ -63,7 +60,7 @@ async def get_articles(chat_id: int, category: str, source: str):
     return articles
 
 
-async def get_picture_for_msg(article: Article) -> str:
+async def get_picture_for_msg(article: Article) -> str | None:
     """Получение картинки для превью статьи."""
     picture = article.picture_link
     if not picture:
@@ -78,11 +75,6 @@ async def get_picture_for_msg(article: Article) -> str:
         elif video_preview:
             logger.info(f'Статья {article.id}: использовано превью из видео.')
             picture = video_preview
-        else:
-            logger.info(f'Статья {article.id}: использовано IMG_NOT_FOUND.')
-            async with aiofiles.open(IMG_NOT_FOUND_PATH, 'rb') as f:
-                content = await f.read()
-            picture = InputFile(content)
     return picture
 
 
@@ -92,9 +84,9 @@ async def send_article_message(
     context: ContextTypes.DEFAULT_TYPE
 ):
     """Отправка сообщения со статьей пользователю"""
-    title = article.title
-    category = article.category
-    overview = article.overview
+    title = escape(article.title)
+    category = escape(article.category)
+    overview = escape(article.overview or '')
     if not overview:
         overview = ''
     else:
@@ -103,17 +95,21 @@ async def send_article_message(
         f'<b>{title}</b>\n\n'
         f'{overview}'
         f'<i>Категория: {category}</i>\n'
-        f'<i>Источник: {article.source}</i>'
+        f'<i>Источник: {escape(article.source)}</i>'
     )
     picture = await get_picture_for_msg(article)
     keyboard = article_keyboard(article.id)
-    await context.bot.send_photo(
-        chat_id,
-        photo=picture,
-        caption=msg_text,
-        reply_markup=keyboard,
-        parse_mode='HTML'
-    )
+    if picture and len(msg_text) <= 1024:
+        await context.bot.send_photo(
+            chat_id, photo=picture, caption=msg_text,
+            reply_markup=keyboard, parse_mode='HTML',
+        )
+    else:
+        if len(msg_text) > 4096:
+            msg_text = f'<b>{escape(article.title[:300])}</b>\n<i>{escape(article.source)}</i>'
+        await context.bot.send_message(
+            chat_id, text=msg_text, reply_markup=keyboard, parse_mode='HTML',
+        )
 
 
 async def send_article_iv_template(
@@ -126,9 +122,9 @@ async def send_article_iv_template(
     iv_url = f'https://t.me/iv?url={url}&rhash={settings.RHASH}'
     msg_text = (
         f'<a href="{iv_url}"> </a>'
-        f'<a href="{url}">{article.title}</a>\n\n'
-        f'<i>Категория: {article.category}</i>\n'
-        f'<i>Источник: {article.source}</i>\n'
+        f'<a href="{url}">{escape(article.title)}</a>\n\n'
+        f'<i>Категория: {escape(article.category)}</i>\n'
+        f'<i>Источник: {escape(article.source)}</i>\n'
     )
     await context.bot.send_message(chat_id, msg_text, parse_mode='HTML')
 

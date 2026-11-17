@@ -2,16 +2,14 @@ from enum import Enum
 
 
 class CategoryFilter(str, Enum):
-    """Доступные фильтры при выборе темы статей."""
-    POLITICS = 'Политика'
-    ECONOMY = 'Экономика'
-    SPORT = 'Спорт'
-    SOCIETY = 'Общество'
+    SCIENCE = 'Наука'
+    EDUCATION = 'Образование'
+    STUDENTS = 'Студентам'
+    CAMPUS = 'Кампус'
     ALL = 'ВСЕ'
 
 
 class SourceFilter(str, Enum):
-    """Доступные фильтры при выборе источников."""
-    RBC = 'РБК'
-    INOSMI = 'ИноСМИ'
+    ITMO = 'ИТМО'
+    HSE = 'НИУ ВШЭ'
     ALL = 'ВСЕ'

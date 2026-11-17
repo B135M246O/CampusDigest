@@ -1,0 +1,1 @@
+17.11.2026: ITMO live Scrapy pipeline: 15 records. HSE final live Scrapy pipeline: 3 records, no errors. Temporary SQLite databases created from ORM metadata and removed; this does not verify PostgreSQL migrations.

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -6,8 +6,6 @@ from app.core.config import settings
 from ...core.db import get_session
 from ...core.user import current_superuser
 from ..jobs import delete_old_articles_job, start_parsers_job
-
-SPIDERS = ['rbc_spider', 'inosmi_spider']
 
 router = APIRouter()
 
@@ -23,7 +21,7 @@ async def start_parsers(
 @router.delete('/', dependencies=[Depends(current_superuser)])
 async def delete_old_articles(
     session: AsyncSession = Depends(get_session),
-    days: int = settings.STORAGE_DAYS
+    days: int = Query(settings.STORAGE_DAYS, ge=0)
 ):
     """Эндпоинт для ручного запуска очистки БД."""
-    return await delete_old_articles_job(session)
+    return await delete_old_articles_job(session, days)

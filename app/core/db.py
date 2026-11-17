@@ -16,8 +16,9 @@ class PreBase():
 
 
 Base = declarative_base(cls=PreBase)
+engine_options = {} if settings.database_url.startswith('sqlite') else {'pool_size': 50}
 engine = create_async_engine(
-    settings.database_url, future=True, echo=False, pool_size=50)
+    settings.database_url, future=True, echo=False, **engine_options)
 async_session_maker = async_sessionmaker(
     engine, expire_on_commit=False, class_=AsyncSession)
 

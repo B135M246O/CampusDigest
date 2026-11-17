@@ -1,72 +1,63 @@
-import uuid
 from pathlib import Path
+from secrets import token_urlsafe
 from typing import Optional
 from urllib.parse import urljoin
 
-from dotenv import load_dotenv
-from pydantic import BaseSettings, EmailStr
+from pydantic import BaseSettings, EmailStr, Field
+from sqlalchemy.engine import URL
 
-load_dotenv()
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
-    """Настройки проекта."""
-    # Настройки приложения:
-    APP_TITLE: str = 'LATEST NEWS PARSER'
-    APP_DESCRIPTION: str = (
-        'API для запуска парсеров и получения новостных статей')
-    HOST: str
-    PORT: int
-    DOMAIN: bool
-    DOMAIN_NAME: str
+    APP_TITLE: str = 'CampusDigest'
+    APP_DESCRIPTION: str = 'Публичные новости вузов и студенческие объявления'
+    HOST: str = '127.0.0.1'
+    PORT: int = 8006
+    DOMAIN: bool = False
+    DOMAIN_NAME: str = 'http://127.0.0.1:8006/'
     DEBUG: bool = False
-    # Настройки БД:
-    POSTGRES_DB: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    DB_HOST: str
-    DB_PORT: str
-    # Хеширование токенов:
-    SECRET: str = str(uuid.uuid4())
-    # Бизнес-логика:
-    PARSER_FREQUENCY: int
-    STORAGE_DAYS: int
-    # Первый суперпользователь:
+    POSTGRES_DB: str = 'campusdigest'
+    POSTGRES_USER: str = 'campusdigest'
+    POSTGRES_PASSWORD: str = 'replace-with-local-database-password'
+    DB_HOST: str = 'localhost'
+    DB_PORT: int = 5432
+    DATABASE_URL: Optional[str] = None
+    SECRET: str = Field(default_factory=lambda: token_urlsafe(32))
+    PARSER_FREQUENCY: int = Field(30, ge=1)
+    STORAGE_DAYS: int = Field(30, ge=0)
+    ENABLE_SCHEDULER: bool = False
     FIRST_SUPERUSER_EMAIL: Optional[EmailStr] = None
     FIRST_SUPERUSER_PASSWORD: Optional[str] = None
     FIRST_SUPERUSER_CHAT_ID: Optional[int] = None
-    # Данные бота:
     IP: str = '127.0.0.1'
-    WEBHOOK: bool
-    BOT_TOKEN: str
-    BOT_PERSISTENCE_FILE: str = str(
-        BASE_DIR / 'app' / 'bot' / 'data' / 'bot_persistence_file')
+    BOT_ENABLED: bool = False
+    WEBHOOK: bool = False
+    BOT_TOKEN: Optional[str] = None
+    BOT_PERSISTENCE_FILE: str = str(BASE_DIR / 'app/bot/data/bot_persistence_file')
     INSTANT_VIEW: bool = False
     RHASH: Optional[str] = None
-    # Настройки логгирования:
-    LOG_LOCATION: str = 'logs/warning.log'
+    LOG_LOCATION: str = str(BASE_DIR / 'logs/warning.log')
     LOG_ROTATION: str = '12:00'
     LOG_COMPRESSION: str = 'tar.gz'
     LOG_LEVEL: str = 'WARNING'
 
     @property
     def database_url(self) -> str:
-        """Получение ссылки для подключения к БД."""
-        return (
-            'postgresql+asyncpg://'
-            f'{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}'
-            f'@{self.DB_HOST}:{self.DB_PORT}/{self.POSTGRES_DB}'
-        )
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return URL.create(
+            'postgresql+asyncpg', username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD, host=self.DB_HOST,
+            port=self.DB_PORT, database=self.POSTGRES_DB,
+        ).render_as_string(hide_password=False)
 
     @property
     def telegram_webhook_url(self) -> str:
-        """Получить ссылку на эндпоинт для работы бота в режиме webhook."""
-        return urljoin(self.DOMAIN_NAME, "telegram/webhook")
+        return urljoin(self.DOMAIN_NAME.rstrip('/') + '/', 'telegram/webhook')
 
     class Config:
-        env_file = '.env'
+        env_file = str(BASE_DIR / '.env')
 
 
 settings = Settings()

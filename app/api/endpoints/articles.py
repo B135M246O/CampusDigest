@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
+from app.core.config import BASE_DIR, settings
 
 from ...core.db import get_session
 from ...core.user import current_superuser, current_user
@@ -17,7 +17,7 @@ from ...models import UserModel
 from ...schemas.articles import Article
 
 router = APIRouter()
-templates = Jinja2Templates('app/api/templates')
+templates = Jinja2Templates(str(BASE_DIR / 'app/api/templates'))
 
 
 @router.get('/count', dependencies=[Depends(current_superuser)])
@@ -92,7 +92,7 @@ async def get_article_html(
         'category': article.category,
         'overview': article.overview,
         'original_link': article.link,
-        'text': article.text.split('\n'),
+        'text': (article.text or '').splitlines(),
         'picture': article.picture_link,
         'infographics': infographic_links,
         'video': article.video_link,

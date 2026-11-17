@@ -145,6 +145,8 @@ async def delete_old_articles_from_db(
     """Удаление устаревших статей."""
     now_datetime = datetime.now(tzlocal()).replace(microsecond=0)
     min_datetime = (now_datetime - timedelta(days=days))
-    stmt = delete(Article).where(Article.date < min_datetime)
+    stmt = delete(Article).where(Article.date < min_datetime).execution_options(
+        synchronize_session='fetch'
+    )
     await session.execute(stmt)
     await session.commit()

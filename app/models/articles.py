@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import TIMESTAMP
 
@@ -9,15 +9,16 @@ from .user import UserModel
 
 class ArticleUser(Base):
     """Модель для связи статей и прочитавших их пользователей."""
+    __table_args__ = (UniqueConstraint('article_id', 'user_id', name='uq_articleuser_article_user'),)
     article_id = Column(
         Integer,
         ForeignKey('article.id', ondelete='CASCADE'),
-        primary_key=True
+        nullable=False
     )
     user_id = Column(
         Integer,
         ForeignKey('user.id', ondelete='CASCADE'),
-        primary_key=True
+        nullable=False
     )
 
 

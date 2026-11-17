@@ -1,282 +1,106 @@
-# Latest News
+# CampusDigest
 
-  ![latest_news_workflow](https://github.com/AbbadonAA/Latest_News_Bot/workflows/latest_news_workflow/badge.svg)
+Агрегатор публичных новостей университетов и объявлений для студентов.
+Scrapy-пауки собирают публикации ИТМО и НИУ ВШЭ в PostgreSQL; FastAPI выдаёт
+подборки, а Telegram-бот позволяет выбрать вуз, тему и количество новостей.
+Полученные записи помечаются прочитанными и не повторяются в следующей подборке.
 
- ## Описание 
-  
- **Latest News** - это API сервиса для парсинга новостных статей с интегрированным ботом Telegram.
+Автор адаптации и доработок — Рябуха Олег.
 
- API может быть использован для взаимодействия со сторонними ботами Telegram или иными сервисами - новостными агрегаторами.
+## Возможности
 
- **Основной функционал API:**
- - Запуск парсеров для заполнения БД новостными статьями;
- - Очистка БД от устаревших новостных статей;
- - Управление пользователями: регистрация, аутентификация, авторизация, редактирование;
- - Получение из БД записей с новостными статьями с возможностью фильтрации. Полученные пользователем статьи помечаются прочитанными и исключаются из ответа при следующих запросах;
- - Формирование html-шаблона статьи для корректного отображения при помощи InstantView Telegram.
+- Регистрация, JWT-аутентификация, управление своим профилем и лимитом подборки.
+- Фильтры «ИТМО», «НИУ ВШЭ», «ВСЕ» и темы «Наука», «Образование», «Студентам», «Кампус».
+- Сбор новостей вручную или по расписанию, исключение дублей по ссылке.
+- Очистка публикаций старше заданного числа дней, управление доступно суперпользователю.
+- HTML-страница публикации с указанием источника; опциональный Telegram Instant View.
+- Telegram `/start`, выбор вуза и темы, настройки количества записей, polling и webhook.
 
- **Реализован парсинг следующих новостных ресурсов:**
- - РБК;
- - ИноСМИ.
-  
- **Настроены:** 
- - Автоматическое создание первого суперпользователя при запуске проекта;
- - CI/CD (GitHub Actions + Docker-Compose).
-  
- ## Ключевые технологии и библиотеки: 
- [![Python][Python-badge]][Python-url]
- [![FastAPI][FastAPI-badge]][FastAPI-url]
- [![Scrapy][Scrapy-badge]][Scrapy-url]
- [![Python-telegram-bot][Python-telegram-bot-badge]][Python-telegram-bot-url]
- [![Postgres][Postgres-badge]][Postgres-url]
- [![SQLAlchemy][SQLAlchemy-badge]][SQLAlchemy-url]
- [![Docker][Docker-badge]][Docker-url]
- [![Nginx][Nginx-badge]][Nginx-url]
+Python 3.11, FastAPI, SQLAlchemy 2, PostgreSQL, Alembic, Scrapy и python-telegram-bot 20.
+Внутренние имена `Article`, `/articles/`, `/db_interact/` сохранены: новости остаются статьями.
+Поле `date` в API содержит ISO 8601 с часовым поясом вместо ручного сдвига даты.
 
- ## Полная установка для локального запуска
- 1. Склонируйте репозиторий: 
- ```shell
- git clone git@github.com:AbbadonAA/Latest_News_Bot.git
- ``` 
- 2. Активируйте venv и установите зависимости: 
- ```shell
- python3 -m venv venv 
- source venv/bin/activate 
- pip install -r requirements.txt 
- ``` 
- 3. Создайте в корневой директории файл .env со следующим наполнением: 
- ```dotenv
-# Переменные API
-APP_TITLE=LATEST_NEWS_PARSER  # (пример) название приложения
-DEBUG=False  # True для включения режима отладки
-HOST=0.0.0.0  # хост
-PORT=8080  # порт
-DOMAIN=False  # имеется ли DOMAIN_NAME
-DOMAIN_NAME=https://example.com  # пример при наличии (необходим сертификат SSL)
-PARSER_FREQUENCY=5  # периодичность запуска парсеров (минуты)
-STORAGE_DAYS=30  # срок хранения данных в БД
-SECRET=539e2390-9cc3-4bc7-aec1-2e96471ba49f  # (пример) uuid для хеширования
-FIRST_SUPERUSER_EMAIL=admin@gmail.com  # (пример) email первого суперпользователя
-FIRST_SUPERUSER_PASSWORD=AdmiN_123456789  # (пример) пароль суперпользователя
+## Локальный запуск
 
-# Переменные бота
-IP=127.0.0.1  # (пример) адрес вашего сервера
-WEBHOOK=False # True для запуска бота в режиме webhook
-BOT_TOKEN=5157247582:ATFpZanqlutiNMJfvO6tiNUDPnBkFAmiVi4  # (пример) токен бота Telegram
+PowerShell из каталога проекта:
 
-# Переменные базы данных
-POSTGRES_DB=news_db  # название БД
-POSTGRES_USER=postgres  # имя пользователя БД
-POSTGRES_PASSWORD=postgres  # пароль БД
-DB_HOST=localhost  # хост БД (для запуска через docker-compose заменить на имя сервиса с БД)
-DB_PORT=6100  # порт БД (можно указать любой, но не забудьте внести изменения в файлы docker-compose)
- ``` 
-
-> **Warning**:
-> Для локального запуска рекомендуется не указывать домен (DOMAIN=False) и запускать бота в режиме polling (WEBHOOK=False). В случае запуска бота в режиме webhook требуется наличие доменного имени с установленным сертификатом SSL. Иначе потребуется использовать Ngrok.
-
-<details>
-<summary><b><i>Использование Ngrok</i></b></summary>
-
-----
-
-Ngrok позволяет создавать временный
-общедоступный адрес (туннель) локального сервера.
-
-Подробнее: https://ngrok.com/
-
-  - Установите Ngrok, следуя официальным инструкциям:
-
-    https://ngrok.com/download
-
-  - Запустите Ngrok и введите команду:
-      ```shell
-      ngrok http 8080
-      ```
-  - Задайте значение переменной окружения (.env):
-      ```dotenv
-      DOMAIN_NAME=https://1234-56-78-9.eu.ngrok.io  # Пример
-      ```
-----
-</details>
-
- 4. Запустите контейнер с базой данных PostgreSQL (должен быть установлен Docker): 
- ```shell
- cd infra/
- docker-compose -f docker-compose.local.yml up -d news_db
- ``` 
- 5. В корневой директории примените миграции для создания таблиц в БД: 
- ```shell
- alembic upgrade head 
- ``` 
- 6. Проект готов к запуску. 
-
- ## Управление при локальном запуске: 
- В корневой директории выполните команду: 
- ```shell
- python run.py
- ``` 
- Сервис будет запущен и доступен по следующим адресам:
-
- *(при условии, что в файле .env: HOST=0.0.0.0, PORT=8080)*
- - http://127.0.0.1:8080 - API 
- - http://127.0.0.1:8080/docs - документация Swagger
- - http://127.0.0.1:8080/redoc - документация ReDoc 
-  
- Также будет запущен бот Telegram, токен которого указан в файле .env.
-
- В БД будет автоматически создан первый суперпользователь (email, password указаны в файле .env).
-
-<details>
-<summary><b><i>Упрощенный вариант установки для запуска в контейнерах</i></b></summary>
-
-1. Создайте директорию для приложения: 
- ```shell
- mkdir LATEST_NEWS (пример)
- ``` 
-2. Разместите в созданной директории файл .env со следующим наполнением:
-```dotenv
-# Переменные API
-APP_TITLE=LATEST_NEWS_PARSER  # (пример) название приложения
-DEBUG=False  # True для включения режима отладки
-HOST=0.0.0.0  # хост
-PORT=8080  # порт
-DOMAIN=False  # имеется ли DOMAIN_NAME
-DOMAIN_NAME=https://example.com  # пример при наличии (необходим сертификат SSL)
-PARSER_FREQUENCY=5  # периодичность запуска парсеров (минуты)
-STORAGE_DAYS=30  # срок хранения данных в БД
-SECRET=539e2390-9cc3-4bc7-aec1-2e96471ba49f  # (пример) uuid для хеширования
-FIRST_SUPERUSER_EMAIL=admin@gmail.com  # (пример) email первого суперпользователя
-FIRST_SUPERUSER_PASSWORD=AdmiN_123456789  # (пример) пароль суперпользователя
-
-# Переменные бота
-IP=127.0.0.1  # (пример) адрес вашего сервера
-WEBHOOK=False # True для запуска бота в режиме webhook
-BOT_TOKEN=5157247582:ATFpZanqlutiNMJfvO6tiNUDPnBkFAmiVi4  # (пример) токен бота Telegram
-
-# Переменные базы данных
-POSTGRES_DB=news_db  # название БД
-POSTGRES_USER=postgres  # имя пользователя БД
-POSTGRES_PASSWORD=postgres  # пароль БД
-DB_HOST=news_db  # хост БД
-DB_PORT=6100  # порт БД (можно указать любой, но не забудьте внести изменения в файлы docker-compose)
- ``` 
-3. В директории приложения создайте директорию /infra:
-```shell
-mkdir infra
-```
-4. Разместите в директории /infra файл docker-compose.local.yml
-5. В директории /infra запустите docker-compose:
-```shell
-docker-compose -f docker-compose.local.yml up -d
-```
-6. Проект запущен в двух контейнерах:
-- latest_news_bot
-- latest_news_db
-</details>
-
- ## Установка на сервере и получение сертификата SSL
-1. Создайте на сервере директорию для приложения: 
- ```shell
- mkdir latest-news (пример) 
- ``` 
-2. Разместите в созданной директории файл .env со следующим наполнением:
-```dotenv
-# Переменные API
-APP_TITLE=LATEST_NEWS_PARSER  # (пример) название приложения
-DEBUG=False  # True для включения режима отладки
-HOST=0.0.0.0  # хост
-PORT=8080  # порт
-DOMAIN=True  # имеется ли DOMAIN_NAME
-DOMAIN_NAME=https://example.com  # (пример)
-PARSER_FREQUENCY=5  # периодичность запуска парсеров (минуты)
-STORAGE_DAYS=30  # срок хранения данных в БД
-SECRET=539e2390-9cc3-4bc7-aec1-2e96471ba49f  # (пример) uuid для хеширования
-FIRST_SUPERUSER_EMAIL=admin@gmail.com  # (пример) email первого суперпользователя
-FIRST_SUPERUSER_PASSWORD=AdmiN_123456789  # (пример) пароль суперпользователя
-
-# Переменные бота
-IP=127.0.0.1  # (пример) адрес вашего сервера
-WEBHOOK=True # Запуск бота в режиме webhook
-BOT_TOKEN=5157247582:ATFpZanqlutiNMJfvO6tiNUDPnBkFAmiVi4  # (пример) токен бота Telegram
-INSTANT_VIEW=True # Активация режима чтения статей через Instant View
-RHASH=f4642197829222  # (пример) rhash вашего шаблона Instant View
-
-# Переменные базы данных
-POSTGRES_DB=news_db  # название БД
-POSTGRES_USER=postgres  # имя пользователя БД
-POSTGRES_PASSWORD=postgres  # пароль БД
-DB_HOST=news_db  # хост БД
-DB_PORT=6100  # порт БД (можно указать любой, но не забудьте внести изменения в файлы docker-compose)
- ```
-
-> **Warning**:
-> Следует учитывать, что режим Instant View корректно работает только с мобильной версией Telegram. При попытке просмотра статей в Telegram через браузер или десктопное приложение могут возникать различные ошибки. Это связано с самой реализацией Instant View. Для стабильной и корректной работы приложения на всех устройствах, вероятно, следует пожертвовать Instant View, не добавляя соответствующие строки в файл .env. - В этом случае пользователь будет получать ссылку и открывать её в браузере.
-
-3. В случае запуска отображения статей в режиме Instant View - создайте свой [шаблон IV](https://instantview.telegram.org/) и укажите его rhash в файле .env:
-```dotenv
-RHASH=f4642197829222  # (пример) rhash вашего шаблона IV
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
 ```
 
-4. Создайте директорию /infra:
-```shell
-mkdir infra
+В `.env` задайте свой пароль PostgreSQL (`POSTGRES_PASSWORD`) и случайный `SECRET`.
+Для создания администратора раскомментируйте и заполните
+`FIRST_SUPERUSER_EMAIL` и `FIRST_SUPERUSER_PASSWORD`.
+База PostgreSQL должна быть доступна на `DB_HOST:DB_PORT`; можно запустить её через Docker:
+
+```powershell
+docker compose --env-file .env -f infra/docker-compose.local.yml up -d campus_db
+.\.venv\Scripts\python.exe -m alembic upgrade head
+.\.venv\Scripts\python.exe run.py
 ```
-5. Разместите в директории /infra файл docker-compose.prod.yml
-6. Уточните в файле docker-compose.prod.yml переменные окружения:
-```dotenv
-VIRTUAL_HOST=example.com (укажите Ваш домен)
-LETSENCRYPT_HOST=example.com (укажите Ваш домен)
-LETSENCRYPT_EMAIL=your_email@example.com (укажите Ваш email)
+
+API: http://127.0.0.1:8006/docs (Swagger), http://127.0.0.1:8006/redoc.
+В Linux/macOS используйте `python3.11`, `.venv/bin/python`.
+
+Для запуска API вместе с БД в контейнерах:
+
+```powershell
+docker compose --env-file .env -f infra/docker-compose.local.yml --profile app up --build
 ```
-7. Разместите в директории /infra (лучше создать отдельную директорию) файл docker-compose.nginx.yml
-8. Создайте сеть Docker:
-```shell
-docker network create nginx-proxy
+
+Все образы приложения собираются локально; автоматической публикации и SSH-деплоя нет.
+
+## Источники и управление
+
+Источники: [ИТМО](https://news.itmo.ru/ru/),
+[раздел ИТМО для студентов](https://news.itmo.ru/ru/education/students/),
+[НИУ ВШЭ](https://www.hse.ru/news/).
+Используются только публичные страницы; robots.txt соблюдается, запросы ограничены.
+Для ВШЭ обрабатываются статьи основного портала `www.hse.ru`: отдельные сайты
+факультетов используют другой шаблон и не входят в обход.
+
+В Swagger зарегистрируйтесь через `POST /auth/register`, войдите через
+`POST /auth/jwt/login` (`username` — email, `password`), нажмите Authorize.
+Обычный пользователь получает непрочитанные новости:
+
+```http
+GET /articles/?source=ИТМО&category_filter=Наука
+Authorization: Bearer <access_token>
 ```
-9. Запустите контейнеры:
-```shell
-docker-compose -f docker-compose.nginx.yml up -d
-docker-compose -f docker-compose.prod.yml up -d
+
+Администратор запускает парсеры через `POST /db_interact/`, очищает старые записи
+через `DELETE /db_interact/?days=30`, проверяет количество через `GET /articles/count`.
+HTML-страница: `GET /articles/html/{id}`.
+Документация схем и всех маршрутов формируется самим FastAPI в `/docs`.
+
+Сбор по расписанию включается через `ENABLE_SCHEDULER=true`, частота —
+`PARSER_FREQUENCY` минут; ежедневная очистка выполняется в полночь серверного времени.
+По умолчанию расписание выключено, чтобы первый запуск не обращался к внешним сайтам.
+
+## Telegram
+
+В `.env` задайте полученный у BotFather `BOT_TOKEN` и `BOT_ENABLED=true`.
+Для локального запуска используйте `WEBHOOK=false` (polling).
+Ссылка «Читать далее» должна быть доступна устройству с Telegram:
+укажите внешний адрес сервера в `IP` или `DOMAIN=true` и `DOMAIN_NAME=https://ваш-домен/`.
+Для webhook нужен публичный HTTPS-адрес, для Instant View — собственный `RHASH`
+и `INSTANT_VIEW=true`. При пустом токене API запускается с `BOT_ENABLED=false`.
+
+## Проверки
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m pip check
 ```
-10. Проект запущен в четырех контейнерах:
-- latest_news_bot
-- latest_news_db
-- nginx-proxy
-- letsencrypt
 
-  Получен сертификат SSL и настроено автоматическое обновление сертификатов.
+`tests/fixtures/` содержит небольшие реальные HTML-фрагменты ИТМО и НИУ ВШЭ,
+сохранённые 17 ноября 2026 года; parser-тесты работают без сети.
+API и бизнес-логика проверяются в изолированной SQLite без изменения основной PostgreSQL.
+Исторические миграции используют PostgreSQL; SQLite для их применения не подходит.
+Результаты live-проверок и ограничения перечислены в `REVIEW.md`.
 
- ## Лицензия 
- - ### **MIT License** 
-  
- ### Автор 
- Pushkarev Anton 
-  
- pushkarevantona@gmail.com
+## Лицензия
 
- <!-- MARKDOWN LINKS & BADGES -->
-
-[Python-url]: https://www.python.org/
-[Python-badge]: https://img.shields.io/badge/Python-14354C?style=for-the-badge&logo=python&logoColor=white
-
-[FastAPI-url]: https://fastapi.tiangolo.com/
-[FastAPI-badge]: https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi
-
-[Scrapy-url]: https://pypi.org/project/Scrapy/
-[Scrapy-badge]: https://img.shields.io/badge/-Scrapy-forestgreen?style=for-the-badge&
-
-[Python-telegram-bot-url]: https://github.com/python-telegram-bot/python-telegram-bot
-[Python-telegram-bot-badge]: https://img.shields.io/badge/python--telegram--bot-2CA5E0?style=for-the-badge
-
-[Postgres-url]: https://www.postgresql.org/
-[Postgres-badge]: https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white
-
-[SQLAlchemy-url]: https://pypi.org/project/SQLAlchemy/
-[SQLAlchemy-badge]: https://img.shields.io/badge/-SQLAlchemy-dimgrey?style=for-the-badge&
-
-[Docker-url]: https://www.docker.com/
-[Docker-badge]: https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white
-
-[Nginx-url]: https://nginx.org
-[Nginx-badge]: https://img.shields.io/badge/nginx-%23009639.svg?style=for-the-badge&logo=nginx&logoColor=white~~
+MIT License. Условия использования приведены в файле `LICENSE`.

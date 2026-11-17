@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from telegram import Update
 
 from app.core.config import settings
@@ -19,6 +19,8 @@ if settings.WEBHOOK:
         if secret_token != settings.SECRET:
             raise UnauthorizedError
         bot_instance = request.app.state.bot_instance
+        if bot_instance is None:
+            raise HTTPException(503, 'Telegram-бот отключен в настройках.')
         request_json_data = await request.json()
         await bot_instance.update_queue.put(
             Update.de_json(data=request_json_data, bot=bot_instance.bot)
